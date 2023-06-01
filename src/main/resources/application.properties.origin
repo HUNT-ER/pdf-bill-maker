@@ -1,0 +1,26 @@
+#db prop
+spring.datasource.driver-class-name=
+spring.datasource.url=
+spring.datasource.username=
+spring.datasource.password=
+
+#hibernate prop
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+spring.jpa.properties.hibernate.show_sql=true
+spring.jpa.open-in-view=false
+#spring.jpa.properties.hibernate.format_sql=true
+
+#gdrive credentials
+google.oauth2.credentials.path=
+
+#thymeleaf prop
+#spring.mvc.hiddenmethod.filter.enabled=true
+
+#fonts
+pdf.font.regular=
+pdf.font.bold=
+
+#image signatures for pdf
+pdf.signatures.signature1=
+pdf.signatures.signature2=
+
