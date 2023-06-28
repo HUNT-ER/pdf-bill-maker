@@ -30,17 +30,23 @@ import com.itextpdf.layout.properties.VerticalAlignment;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import org.apache.commons.io.IOUtils;
 import org.modelmapper.ModelMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
 @Component
 public class BillDetailsDTOToBillConverter {
 
+    private final static Logger log = LoggerFactory.getLogger(BillDetailsDTOToBillConverter.class);
     private final ModelMapper modelMapper;
     private final int DEFAULT_FONT_SIZE = 11;
     private final int TITLE_FONT_SIZE = 16;
@@ -64,10 +70,12 @@ public class BillDetailsDTOToBillConverter {
 
     public Bill convert(BillDetailsDTO billDetailsDTO) {
         try {
-            regularFont = PdfFontFactory.createFont(regularFontPath, PdfEncodings.IDENTITY_H);
-            boldFont = PdfFontFactory.createFont(boldFontPath, PdfEncodings.IDENTITY_H);
+            ClassPathResource regFont = new ClassPathResource(regularFontPath);
+            ClassPathResource bFont = new ClassPathResource(boldFontPath);
+            regularFont = PdfFontFactory.createFont(IOUtils.toByteArray(regFont.getInputStream()), PdfEncodings.IDENTITY_H);
+            boldFont = PdfFontFactory.createFont(IOUtils.toByteArray(bFont.getInputStream()), PdfEncodings.IDENTITY_H);
         } catch (IOException e) {
-            throw new FontNotCreatedException(e.getMessage());
+            log.error("Fail to find font", new FontNotCreatedException(e.getMessage()));
         }
         Bill bill = modelMapper.map(billDetailsDTO, Bill.class);
         File pdfBill = createBill(billDetailsDTO);
@@ -86,19 +94,22 @@ public class BillDetailsDTOToBillConverter {
 
     private File createBill(BillDetailsDTO billDetailsDTO) {
         StringBuilder billName = new StringBuilder();
-        billName.append("src/main/resources/documents/СЧЕТ_АКТ_")
-            .append(billDetailsDTO.getBillNumber())
-            .append(" ")
-            .append(billDetailsDTO.getBillDate().format(DateTimeFormatter.ofPattern("dd-MM-YYYY")))
-            .append(".pdf");
+        billName.append("СЧЕТ_АКТ_")
+            .append(billDetailsDTO.getBillNumber()).append(" ")
+            .append(billDetailsDTO.getBillDate().format(DateTimeFormatter.ofPattern("dd-MM-YYYY")));
+        if (!billDetailsDTO.getSigned()) {
+            billName.append("(Не подписанный)");
+        }
+        billName.append(".pdf");
 
         try (PdfDocument pdfDocument = new PdfDocument(
-            new PdfWriter(billName.toString()));
-            Document document = new Document(pdfDocument)) {
-            createDocumentPage(DocumentType.INVOICE, document, billDetailsDTO, true);
+            new PdfWriter(billName.toString())); Document document = new Document(pdfDocument)) {
+            createDocumentPage(DocumentType.INVOICE, document, billDetailsDTO,
+                billDetailsDTO.getSigned());
             document.add(new AreaBreak(AreaBreakType.NEXT_PAGE));
-            createDocumentPage(DocumentType.ACT, document, billDetailsDTO, true);
-            ;
+            createDocumentPage(DocumentType.ACT, document, billDetailsDTO,
+                billDetailsDTO.getSigned());
+
         } catch (FileNotFoundException e) {
             throw new DocumentNotCreatedException(e.getMessage());
         }
@@ -108,22 +119,21 @@ public class BillDetailsDTOToBillConverter {
     private Document createDocumentPage(DocumentType docType, Document document,
         BillDetailsDTO billDetailsDTO, boolean withSignature) {
         if (docType == DocumentType.INVOICE) {
-            document.add(setVerticalAlignment(
-                createCredentialsTable("Получатель", "Банк",
-                    billDetailsDTO.getRecipientCredentials(),
-                    billDetailsDTO.getBankCredentials()), VerticalAlignment.MIDDLE));
+            document.add(setVerticalAlignment(createCredentialsTable("Получатель", "Банк",
+                    billDetailsDTO.getRecipientCredentials(), billDetailsDTO.getBankCredentials()),
+                VerticalAlignment.MIDDLE));
         }
         document.add(getIndent(1));
         document.add(createTitleBlock(docType, 1, billDetailsDTO.getBillDate()));
         document.add(getIndent(1));
-        document.add(setVerticalAlignment(
-            removeBorders(
+        document.add(setVerticalAlignment(removeBorders(
                 createCredentialsTable("Поставщик:", "Покупатель:", billDetailsDTO.getCarrier(),
                     billDetailsDTO.getCustomer() + " " + billDetailsDTO.getCustomerCredentials())),
             VerticalAlignment.TOP));
         document.add(getIndent(1));
-        document.add(setVerticalAlignment(createServiceTable(
-            billDetailsDTO.getRoute(), billDetailsDTO.getCost()), VerticalAlignment.MIDDLE));
+        document.add(setVerticalAlignment(
+            createServiceTable(billDetailsDTO.getRoute(), billDetailsDTO.getCost()),
+            VerticalAlignment.MIDDLE));
         this.addServiceSumBlock(document, billDetailsDTO.getCost());
         document.add(getIndent(1));
         if (docType == DocumentType.ACT) {
@@ -141,8 +151,7 @@ public class BillDetailsDTOToBillConverter {
     private Paragraph createTitleBlock(DocumentType docType, long number, LocalDate date) {
 
         return new Paragraph().setFont(boldFont).setFontSize(TITLE_FONT_SIZE)
-            .setTextAlignment(TextAlignment.CENTER)
-            .add(setTitle(docType, number, date));
+            .setTextAlignment(TextAlignment.CENTER).add(setTitle(docType, number, date));
     }
 
     private String setTitle(DocumentType documentType, long number, LocalDate date) {
@@ -155,12 +164,8 @@ public class BillDetailsDTOToBillConverter {
     private Table createCredentialsTable(String rowName1, String rowName2, String credentials1,
         String credentials2) {
 
-        Table table = new Table(2)
-            .setFont(regularFont)
-            .setFontSize(DEFAULT_FONT_SIZE)
-            .setHorizontalAlignment(HorizontalAlignment.CENTER)
-            .setHeight(120)
-            .setWidth(500);
+        Table table = new Table(2).setFont(regularFont).setFontSize(DEFAULT_FONT_SIZE)
+            .setHorizontalAlignment(HorizontalAlignment.CENTER).setHeight(120).setWidth(500);
         table.addCell(new Cell().add(new Paragraph(rowName1)))
             .addCell((new Cell().add(new Paragraph(credentials1))))
             .addCell((new Cell().add(new Paragraph(rowName2))))
@@ -191,12 +196,8 @@ public class BillDetailsDTOToBillConverter {
     private Table createServiceTable(String route, int cost) {
         String[] headers = new String[]{"№", "Товары (работы , услуги)", "Кол-во", "Ед", "Цена",
             "Сумма"};
-        Table servicesTable = new Table(6)
-            .setFont(regularFont)
-            .setFontSize(DEFAULT_FONT_SIZE)
-            .setHorizontalAlignment(HorizontalAlignment.CENTER)
-            .setHeight(90)
-            .setWidth(500);
+        Table servicesTable = new Table(6).setFont(regularFont).setFontSize(DEFAULT_FONT_SIZE)
+            .setHorizontalAlignment(HorizontalAlignment.CENTER).setHeight(90).setWidth(500);
 
         for (int i = 0; i < headers.length; i++) {
             servicesTable.addCell(new Cell().add(new Paragraph(headers[i]).setFont(boldFont)));
@@ -213,18 +214,12 @@ public class BillDetailsDTOToBillConverter {
 
     private Div createSumInfoBlock(int cost) {
 
-        Div sumInfo = new Div()
-            .setFont(boldFont)
-            .setTextAlignment(TextAlignment.RIGHT)
-            .setHeight(100)
-            .setVerticalAlignment(VerticalAlignment.MIDDLE);
+        Div sumInfo = new Div().setFont(boldFont).setTextAlignment(TextAlignment.RIGHT)
+            .setHeight(100).setVerticalAlignment(VerticalAlignment.MIDDLE);
         Paragraph paragraph = new Paragraph();
 
-        paragraph.add(String.format("ИТОГО: %d.00", cost))
-            .add("\n")
-            .add("Без налога (НДС): 0.00")
-            .add("\n")
-            .add(String.format("Всего к оплате: %d.00", cost));
+        paragraph.add(String.format("ИТОГО: %d.00", cost)).add("\n").add("Без налога (НДС): 0.00")
+            .add("\n").add(String.format("Всего к оплате: %d.00", cost));
 
         return sumInfo.add(paragraph);
     }
@@ -253,14 +248,12 @@ public class BillDetailsDTOToBillConverter {
             docSignatory = "Исполнитель";
         }
 
-        String singleSignatory = String.format("%s______________/%s/", docSignatory,
-            signatory);
+        String singleSignatory = String.format("%s______________/%s/", docSignatory, signatory);
         Paragraph signatoryLine = new Paragraph();
         signatoryLine.add(singleSignatory);
 
         if (docType == DocumentType.ACT) {
-            signatoryLine.add("         ")
-                .add("Заказчик______________/__________/");
+            signatoryLine.add("         ").add("Заказчик______________/__________/");
         }
         signatoryDiv.add(signatoryLine);
 
@@ -268,9 +261,7 @@ public class BillDetailsDTOToBillConverter {
     }
 
     private Div createConfirmationBlock() {
-        Div block = new Div()
-            .setFont(regularFont)
-            .setHeight(50)
+        Div block = new Div().setFont(regularFont).setHeight(50)
             .setVerticalAlignment(VerticalAlignment.MIDDLE);
 
         block.add(new Paragraph(
@@ -281,20 +272,27 @@ public class BillDetailsDTOToBillConverter {
 
     private Image getSignature(DocumentType docType) {
         Image signature = null;
+        InputStream signature1 = null;
+        InputStream signature2 = null;
+        try {
+            signature1 = new ClassPathResource(signature1Path).getInputStream();
+            signature2 = new ClassPathResource(signature2Path).getInputStream();
+        } catch (IOException e) {
+            throw new RuntimeException("Signatures not found");
+        }
+
         try {
             if (docType == DocumentType.INVOICE) {
-                ImageData imageData = ImageDataFactory.create(
-                    signature1Path);
-                signature = new Image(imageData).setFixedPosition(1, 115, 139)
-                    .scale(0.25f, 0.25f);
+                ImageData imageData = ImageDataFactory.create(IOUtils.toByteArray(signature1));
+                signature = new Image(imageData).setFixedPosition(1, 115, 139).scale(0.25f, 0.25f);
             } else {
-                ImageData imageData = ImageDataFactory.create(
-                    signature2Path);
-                signature = new Image(imageData).setFixedPosition(2, 107, 197)
-                    .scale(0.25f, 0.25f);
+                ImageData imageData = ImageDataFactory.create(IOUtils.toByteArray(signature2));
+                signature = new Image(imageData).setFixedPosition(2, 107, 197).scale(0.25f, 0.25f);
             }
         } catch (MalformedURLException e) {
             throw new SignatureNotFoundException(e.getMessage());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
         return signature;
     }

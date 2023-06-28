@@ -11,40 +11,44 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class BillDetailsDTO {
 
-    @NotNull(message = "РќРµ СѓРєР°Р·Р°РЅ РЅРѕРјРµСЂ СЃС‡С‘С‚Р°")
-    @Min(message = "РќРѕРјРµСЂ СЃС‡С‘С‚Р° РґРѕР»Р¶РµРЅ Р±С‹С‚СЊ Р±РѕР»СЊС€Рµ 1", value = 1)
+    @NotNull(message = "Не указан номер счёта")
+    @Min(message = "Номер счёта должен быть больше 1", value = 1)
     @JsonProperty("number")
     private Long billNumber;
 
-    @NotNull(message = "РќРµ СѓРєР°Р·Р°РЅР° РґР°С‚Р°")
+    @NotNull(message = "Не указана дата")
     @JsonProperty("date")
     private LocalDate billDate;
 
-    @NotNull(message = "РќРµ СѓРєР°Р·Р°РЅС‹ РґР°РЅРЅС‹Рµ РїРѕР»СѓС‡Р°С‚РµР»СЏ")
+    @NotNull(message = "Не указаны данные получателя")
     @JsonProperty("recipient_cred")
     private String recipientCredentials;
 
-    @NotNull(message = "РќРµ СѓРєР°Р·Р°РЅ Р±Р°РЅРє РїРѕР»СѓС‡Р°С‚РµР»СЏ")
+    @NotNull(message = "Не указан банк получателя")
     @JsonProperty("bank_cred")
     private String bankCredentials;
 
-    @NotNull(message = "РќРµ СѓРєР°Р·Р°РЅ РёСЃРїРѕР»РЅРёС‚РµР»СЊ")
+    @NotNull(message = "Не указан исполнитель")
     private String carrier;
 
-    @NotNull(message = "РќРµ СѓРєР°Р·Р°РЅР° РѕСЂРіР°РЅРёР·Р°С†РёСЏ")
+    @NotNull(message = "Не указана организация")
     private String customer;
 
-    @NotNull(message = "РќРµ СѓРєР°Р·Р°РЅС‹ РґР°РЅРЅС‹Рµ Р·Р°РєР°Р·С‡РёРєР°")
+    @NotNull(message = "Не указаны данные заказчика")
     @JsonProperty("customer_cred")
     private String customerCredentials;
 
-    @NotNull(message = "РќРµ СѓРєР°Р·Р°РЅ РјР°СЂС€СЂСѓС‚")
+    @NotNull(message = "Не указан маршрут")
     private String route;
 
-    @NotNull(message = "РќРµ СѓРєР°Р·Р°РЅР° С†РµРЅР°")
-    @Min(message = "Р¦РµРЅР° РґРѕР»Р¶РЅР° Р±С‹С‚СЊ Р±РѕР»СЊС€Рµ 0", value = 1)
+    @NotNull(message = "Не указана стоимость")
+    @Min(message = "Стоимость должна быть больше 0", value = 1)
     private Integer cost;
 
-    @NotNull(message = "РќРµ СѓРєР°Р·Р°РЅ РїРѕРґРїРёСЃР°РЅС‚")
+    @NotNull(message = "Не указан подписант")
     private String signatory;
+
+    @NotNull(message = "Не указана неообходимость подписи")
+    @JsonProperty("signed")
+    private Boolean signed;
 }

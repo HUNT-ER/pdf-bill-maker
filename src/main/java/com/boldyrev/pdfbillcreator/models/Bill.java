@@ -48,8 +48,8 @@ public class Bill {
     private String route;
 
     @Column(name = "cost")
-    @NotNull(message = "Не указана цена")
-    @Min(message = "Цена должна быть больше 0", value = 1)
+    @NotNull(message = "Не указана стоимость")
+    @Min(message = "Стоимость должна быть больше 0", value = 1)
     private Integer cost;
 
     @Column(name = "created_at")

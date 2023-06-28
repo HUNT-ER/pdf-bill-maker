@@ -12,9 +12,9 @@ import com.google.auth.http.HttpCredentialsAdapter;
 import com.google.auth.oauth2.AccessToken;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.auth.oauth2.ServiceAccountCredentials;
-import java.io.FileInputStream;
 import java.io.IOException;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -48,7 +48,7 @@ public class GoogleDriveDAO {
 
     private HttpRequestInitializer getCredentials() throws IOException {
         GoogleCredentials cred = ServiceAccountCredentials.fromStream(
-                new FileInputStream(SECRET_CREDENTIALS))
+                new ClassPathResource(SECRET_CREDENTIALS).getInputStream())
             .createScoped(DriveScopes.all());
         AccessToken token = cred.refreshAccessToken();
 

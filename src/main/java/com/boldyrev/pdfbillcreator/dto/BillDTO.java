@@ -1,42 +1,46 @@
 package com.boldyrev.pdfbillcreator.dto;
 
-import jakarta.persistence.Column;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode.Exclude;
 import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
+@AllArgsConstructor
 public class BillDTO {
 
-    @Column(name = "url")
+    @JsonProperty("url")
     private String url;
 
-    @Column(name = "bill_number")
     @NotNull(message = "Не указан номер счёта")
     @Min(message = "Номер счёта должен быть больше 1", value = 1)
+    @JsonProperty("number")
     private Long billNumber;
 
-    @Column(name = "date")
     @NotNull(message = "Не указана дата")
+    @JsonProperty("date")
     private LocalDate billDate;
 
-    @Column(name = "customer")
     @NotNull(message = "Не указана организация")
+    @JsonProperty("customer")
     private String customer;
 
-    @Column(name = "route")
     @NotNull(message = "Не указан маршрут")
+    @JsonProperty("route")
     private String route;
 
-    @Column(name = "cost")
-    @NotNull(message = "Не указана цена")
-    @Min(message = "Цена должна быть больше 0", value = 1)
+    @NotNull(message = "Не указана стоимость")
+    @Min(message = "Стоимость должна быть больше 0", value = 1)
+    @JsonProperty("cost")
     private Integer cost;
 
-    @Column(name = "created_at")
+    @JsonProperty("created_at")
+    @Exclude
     private LocalDateTime createdAt;
 }

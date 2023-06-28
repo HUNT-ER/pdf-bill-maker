@@ -9,14 +9,16 @@ import com.boldyrev.pdfbillcreator.utils.converters.BillDetailsDTOToBillConverte
 import com.boldyrev.pdfbillcreator.utils.responses.BillErrorResponse;
 import com.boldyrev.pdfbillcreator.utils.responses.BillsResponse;
 import jakarta.validation.Valid;
+import java.net.URI;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -26,14 +28,15 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/bills")
-public class BillsController {
+@CrossOrigin
+public class BillsRestController {
 
     private final BillsService billsService;
     private final ModelMapper modelMapper;
     private final BillDetailsDTOToBillConverter converter;
 
     @Autowired
-    public BillsController(BillsService billsService, ModelMapper modelMapper,
+    public BillsRestController(BillsService billsService, ModelMapper modelMapper,
         BillDetailsDTOToBillConverter converter) {
         this.billsService = billsService;
         this.modelMapper = modelMapper;
@@ -41,7 +44,7 @@ public class BillsController {
     }
 
     @PostMapping("/new")
-    public BillDTO createBill(@RequestBody @Valid BillDetailsDTO billDetailsDTO,
+    public ResponseEntity<BillDTO> createBill(@RequestBody @Valid BillDetailsDTO billDetailsDTO,
         BindingResult bindingResult) {
 
         if (bindingResult.hasErrors()) {
@@ -53,34 +56,34 @@ public class BillsController {
                     .append(e.getDefaultMessage())
                     .append(";")
             );
-
             throw new IncorrectBillDetailsException(builder.toString());
         }
 
         Bill bill = converter.convert(billDetailsDTO);
         billsService.save(bill);
 
-        return convertBillToBillDTO(bill);
+        return ResponseEntity.created(URI.create("http://localhost:80/bills/new"))
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(convertBillToBillDTO(bill));
     }
 
     @GetMapping
-    public BillsResponse getBills() {
-        List<BillDTO> billDTOList = billsService.findAll().stream().map(this::convertBillToBillDTO)
+    public ResponseEntity<BillsResponse> getBills() {
+        List<BillDTO> billDTOList = billsService.findAll().stream()
+            .map(this::convertBillToBillDTO)
             .collect(Collectors.toList());
-        BillsResponse response = new BillsResponse();
-        response.setBills(billDTOList);
+        BillsResponse response = new BillsResponse(billDTOList);
 
-        return response;
+        return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(response);
     }
 
     @ExceptionHandler
     public ResponseEntity<BillErrorResponse> handleException(IncorrectBillDetailsException e) {
-        return new ResponseEntity<>(new BillErrorResponse(e.getMessage(), LocalDateTime.now()),
-            HttpStatus.BAD_REQUEST);
+        return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON)
+            .body(new BillErrorResponse(e.getMessage(), LocalDateTime.now()));
     }
 
     private BillDTO convertBillToBillDTO(Bill bill) {
         return modelMapper.map(bill, BillDTO.class);
     }
-
 }
