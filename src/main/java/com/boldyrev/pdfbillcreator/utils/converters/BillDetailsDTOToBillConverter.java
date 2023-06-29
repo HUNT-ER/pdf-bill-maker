@@ -75,7 +75,8 @@ public class BillDetailsDTOToBillConverter {
             regularFont = PdfFontFactory.createFont(IOUtils.toByteArray(regFont.getInputStream()), PdfEncodings.IDENTITY_H);
             boldFont = PdfFontFactory.createFont(IOUtils.toByteArray(bFont.getInputStream()), PdfEncodings.IDENTITY_H);
         } catch (IOException e) {
-            log.error("Fail to find font", new FontNotCreatedException(e.getMessage()));
+            log.error("Fail to find regular font \"{}\" or bold font \"{}\". Add correct path in application.properties", regularFontPath, boldFontPath);
+            throw new FontNotCreatedException(e.getMessage());
         }
         Bill bill = modelMapper.map(billDetailsDTO, Bill.class);
         File pdfBill = createBill(billDetailsDTO);
@@ -84,9 +85,10 @@ public class BillDetailsDTOToBillConverter {
         try {
             bill.setUrl(googleDriveDAO.saveAndGetUrl(pdfBill));
         } catch (IOException e) {
+            log.error("Error connecting to google drive.");
             throw new GoogleDriveFileNotSavedException(e.getMessage());
         }
-        //удаляем локальный pdf
+
         pdfBill.delete();
 
         return bill;
@@ -109,8 +111,8 @@ public class BillDetailsDTOToBillConverter {
             document.add(new AreaBreak(AreaBreakType.NEXT_PAGE));
             createDocumentPage(DocumentType.ACT, document, billDetailsDTO,
                 billDetailsDTO.getSigned());
-
         } catch (FileNotFoundException e) {
+            log.error("Document \"{}\" not found", billName.toString());
             throw new DocumentNotCreatedException(e.getMessage());
         }
         return new File(billName.toString());
@@ -272,16 +274,10 @@ public class BillDetailsDTOToBillConverter {
 
     private Image getSignature(DocumentType docType) {
         Image signature = null;
-        InputStream signature1 = null;
-        InputStream signature2 = null;
         try {
-            signature1 = new ClassPathResource(signature1Path).getInputStream();
-            signature2 = new ClassPathResource(signature2Path).getInputStream();
-        } catch (IOException e) {
-            throw new RuntimeException("Signatures not found");
-        }
+            InputStream signature1 = new ClassPathResource(signature1Path).getInputStream();
+            InputStream signature2 = new ClassPathResource(signature2Path).getInputStream();
 
-        try {
             if (docType == DocumentType.INVOICE) {
                 ImageData imageData = ImageDataFactory.create(IOUtils.toByteArray(signature1));
                 signature = new Image(imageData).setFixedPosition(1, 115, 139).scale(0.25f, 0.25f);
@@ -289,10 +285,10 @@ public class BillDetailsDTOToBillConverter {
                 ImageData imageData = ImageDataFactory.create(IOUtils.toByteArray(signature2));
                 signature = new Image(imageData).setFixedPosition(2, 107, 197).scale(0.25f, 0.25f);
             }
-        } catch (MalformedURLException e) {
-            throw new SignatureNotFoundException(e.getMessage());
+
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            log.error("Signatures files not found in classpath \"{}\", \"{}\"", signature1Path, signature2Path);
+            throw new SignatureNotFoundException(e.getMessage());
         }
         return signature;
     }

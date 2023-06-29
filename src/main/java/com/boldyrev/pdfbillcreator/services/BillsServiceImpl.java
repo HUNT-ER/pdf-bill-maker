@@ -33,8 +33,6 @@ public class BillsServiceImpl implements BillsService {
         billsRepository.save(enrich(bill));
 
         log.info("New bill was created: {}", bill);
-        log.debug("New created: {}", bill);
-        log.trace("New created");
     }
 
     private Bill enrich(Bill bill) {

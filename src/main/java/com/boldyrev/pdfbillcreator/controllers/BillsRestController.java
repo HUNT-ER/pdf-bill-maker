@@ -14,9 +14,12 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.modelmapper.ModelMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -31,6 +34,7 @@ import org.springframework.web.bind.annotation.RestController;
 @CrossOrigin
 public class BillsRestController {
 
+    private final static Logger log = LoggerFactory.getLogger(BillsRestController.class);
     private final BillsService billsService;
     private final ModelMapper modelMapper;
     private final BillDetailsDTOToBillConverter converter;
@@ -79,6 +83,7 @@ public class BillsRestController {
 
     @ExceptionHandler
     public ResponseEntity<BillErrorResponse> handleException(IncorrectBillDetailsException e) {
+        log.debug("Request received with invalid bill data \"{}\"", e.getMessage());
         return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON)
             .body(new BillErrorResponse(e.getMessage(), LocalDateTime.now()));
     }
