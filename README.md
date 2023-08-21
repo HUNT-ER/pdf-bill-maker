@@ -10,10 +10,12 @@ The output is a link to download a pdf of the document on google drive. Two vari
 
 # API Reference 
 
+
 ## Get all created Bills
 
 **GET** `/bills `
   returns list of bills
+
 
 ## Create new bill by details
 
@@ -36,3 +38,6 @@ The output is a link to download a pdf of the document on google drive. Two vari
       "signed": true
   }
 ```
+
+# Entity diagram
+![bills](https://github.com/HUNT-ER/pdf-bill-maker/assets/38404914/823fbc63-960c-46d2-9e21-643c7c0be23b)
