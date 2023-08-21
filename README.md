@@ -41,3 +41,7 @@ The output is a link to download a pdf of the document on google drive. Two vari
 
 # Entity diagram
 ![bills](https://github.com/HUNT-ER/pdf-bill-maker/assets/38404914/823fbc63-960c-46d2-9e21-643c7c0be23b)
+
+# What I learned
+Learned: Docker, Docker compose, Google Drive API, IText7 library for PDF
+Improved skills in testing and Spring Boot
