@@ -1,0 +1,45 @@
+services:
+  db:
+    image: postgres
+    container_name: postgres
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: sanek12199708
+      POSTGRES_DB: library
+    volumes:
+      - ./src/main/sql:/docker-entrypoint-initdb.d
+      - pg_data:/var/lib/postgresql/data
+    networks:
+      - postgres
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: "sashaboldyrev1997@gmail.com"
+      PGADMIN_DEFAULT_PASSWORD: "sanek12199708"
+    ports:
+      - "5050:80"
+    volumes:
+      - pg_admin:/var/lib/pgadmin
+    networks:
+      - postgres
+
+  web:
+    image: nh028/bill-maker-rest-service
+    container_name: bill_maker_app
+    restart: always
+    depends_on:
+      - db
+    ports:
+      - 8081:80
+    networks:
+      - postgres
+
+volumes:
+  pg_data:
+  pg_admin:
+
+networks:
+  postgres:
