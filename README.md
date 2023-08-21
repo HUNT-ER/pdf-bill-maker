@@ -15,6 +15,8 @@ The output is a link to download a pdf of the document on google drive. Two vari
 **GET** `/bills `
   returns list of bills
 
+## Create new bill by details
+
 **POST** `/bills/new`
   returns new bill
 
