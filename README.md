@@ -2,6 +2,21 @@
 This API allows you to automatically create and sign an invoice and vehicle acceptance certificate for trucking companies.
 The output is a link to download a pdf of the document on google drive. Two variants of document preparation are supported - with and without signature.
 
+# Build with
+- Spring Boot
+- Spring Data JPA
+- Spring Web MVC
+- Hibernate
+- PostgreSQL
+- Lombok
+- Docker
+- Google Drive API
+- IText7
+- Spring Boot Test
+- Mockito
+- Testcontainers
+- Flyway
+
 ## Set up 
 - [*clone*](https://github.com/HUNT-ER/pdf-bill-maker.git) the project
 - add Images of signatures (1 per each page, total 2) in classpath, fonts for document (bold and regular), google drive secret credentials. I recommended to use service account 
