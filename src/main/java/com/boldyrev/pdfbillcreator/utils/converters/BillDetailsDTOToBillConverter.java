@@ -31,9 +31,9 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
@@ -72,10 +72,14 @@ public class BillDetailsDTOToBillConverter {
         try {
             ClassPathResource regFont = new ClassPathResource(regularFontPath);
             ClassPathResource bFont = new ClassPathResource(boldFontPath);
-            regularFont = PdfFontFactory.createFont(IOUtils.toByteArray(regFont.getInputStream()), PdfEncodings.IDENTITY_H);
-            boldFont = PdfFontFactory.createFont(IOUtils.toByteArray(bFont.getInputStream()), PdfEncodings.IDENTITY_H);
+            regularFont = PdfFontFactory.createFont(IOUtils.toByteArray(regFont.getInputStream()),
+                PdfEncodings.IDENTITY_H);
+            boldFont = PdfFontFactory.createFont(IOUtils.toByteArray(bFont.getInputStream()),
+                PdfEncodings.IDENTITY_H);
         } catch (IOException e) {
-            log.error("Fail to find regular font \"{}\" or bold font \"{}\". Add correct path in application.properties", regularFontPath, boldFontPath);
+            log.error(
+                "Fail to find regular font \"{}\" or bold font \"{}\". Add correct path in application.properties",
+                regularFontPath, boldFontPath);
             throw new FontNotCreatedException(e.getMessage());
         }
         Bill bill = modelMapper.map(billDetailsDTO, Bill.class);
@@ -126,7 +130,8 @@ public class BillDetailsDTOToBillConverter {
                 VerticalAlignment.MIDDLE));
         }
         document.add(getIndent(1));
-        document.add(createTitleBlock(docType, 1, billDetailsDTO.getBillDate()));
+        document.add(createTitleBlock(docType, billDetailsDTO.getBillNumber(),
+            billDetailsDTO.getBillDate()));
         document.add(getIndent(1));
         document.add(setVerticalAlignment(removeBorders(
                 createCredentialsTable("Поставщик:", "Покупатель:", billDetailsDTO.getCarrier(),
@@ -199,14 +204,19 @@ public class BillDetailsDTOToBillConverter {
         String[] headers = new String[]{"№", "Товары (работы , услуги)", "Кол-во", "Ед", "Цена",
             "Сумма"};
         Table servicesTable = new Table(6).setFont(regularFont).setFontSize(DEFAULT_FONT_SIZE)
-            .setHorizontalAlignment(HorizontalAlignment.CENTER).setHeight(90).setWidth(500);
+            .setHorizontalAlignment(HorizontalAlignment.CENTER).setHeight(140).setWidth(500);
 
         for (int i = 0; i < headers.length; i++) {
             servicesTable.addCell(new Cell().add(new Paragraph(headers[i]).setFont(boldFont)));
         }
 
+        Cell routeCell = new Cell();
+        routeCell.add(new Paragraph("Оказание транспортных услуг по маршруту " + route)
+            .setFont(regularFont).setFontSize(8));
+        routeCell.setHeight(100);
+
         servicesTable.addCell(new Paragraph("1"))
-            .addCell(new Paragraph("Оказание транспортных услуг по маршруту " + route))
+            .addCell(routeCell)
             .addCell(new Paragraph("1")).addCell(new Paragraph("рейс"))
             .addCell(new Paragraph(String.format("%d.00", cost)))
             .addCell(new Paragraph(String.format("%d.00", cost)));
@@ -280,14 +290,15 @@ public class BillDetailsDTOToBillConverter {
 
             if (docType == DocumentType.INVOICE) {
                 ImageData imageData = ImageDataFactory.create(IOUtils.toByteArray(signature1));
-                signature = new Image(imageData).setFixedPosition(1, 115, 139).scale(0.25f, 0.25f);
+                signature = new Image(imageData).setFixedPosition(1, 115, 89).scale(0.25f, 0.25f);
             } else {
                 ImageData imageData = ImageDataFactory.create(IOUtils.toByteArray(signature2));
-                signature = new Image(imageData).setFixedPosition(2, 107, 197).scale(0.25f, 0.25f);
+                signature = new Image(imageData).setFixedPosition(2, 107, 147).scale(0.25f, 0.25f);
             }
 
         } catch (IOException e) {
-            log.error("Signatures files not found in classpath \"{}\", \"{}\"", signature1Path, signature2Path);
+            log.error("Signatures files not found in classpath \"{}\", \"{}\"", signature1Path,
+                signature2Path);
             throw new SignatureNotFoundException(e.getMessage());
         }
         return signature;

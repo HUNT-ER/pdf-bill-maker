@@ -4,9 +4,8 @@ create table bills
     url         varchar                          not null unique,
     bill_number bigint check ( bill_number > 0 ) not null,
     bill_date   date                             not null,
-    customer    varchar(100)                     not null,
-    route       varchar(100)                     not null,
+    customer    varchar(1000)                    not null,
+    route       varchar(1000)                    not null,
     cost        integer check ( cost > 0 )       not null,
-    created_at  timestamp                        not null
+    created_at   timestamp                        not null
 );
-
